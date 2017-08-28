@@ -1,0 +1,17 @@
+{
+  "presets": [
+    ["env", { "modules": false }],
+    "vue-app"
+  ],
+  "plugins": [
+    "transform-runtime",
+    "transform-async-to-generator"
+  ],
+  "comments": false,
+  "env": {
+    "test": {
+      "presets": ["env", "vue-app"],
+      "plugins": [ "istanbul" ]
+    }
+  }
+}
