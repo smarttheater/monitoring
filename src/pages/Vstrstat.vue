@@ -19,7 +19,7 @@
                         'schedule-past': currentScheduleIndex > index
                     }]">
                     <div class="scheduleheader">
-                        <div class="status">{{ (currentScheduleIndex === index) ? '受付中' : (currentScheduleIndex > index) ? '終了' : '&nbsp;' }}</div>
+                        <div class="status"></div>
                         <div class="time">{{ `${schedule.start_time}～${schedule.end_time}` }}</div>
                     </div>
                     <table>
@@ -157,36 +157,38 @@ export default {
                         return 0;
                     });
                     // 整形処理
+                    const requiredCheckpointIdArray = Object.keys(res.data.data.checkpoints); // チェックポイント定義
                     res.data.data.schedules.forEach((schedule, index) => {
-                        // 時刻に : を入れておく
+                        // 時刻に : を入れる
                         res.data.data.schedules[index].start_time = this.spliceStr(schedule.start_time, 2, ':');
                         res.data.data.schedules[index].end_time = this.spliceStr(schedule.end_time, 2, ':');
-                        // checkpointArrayが無かった場合checkpoints定義から数値0で作る
-                        if (!schedule.checkpointArray[0]) {
-                            Object.keys(res.data.data.checkpoints).forEach((checkpoint) => {
-                                // concernedReservedArrayからconcernedUnarrivedArrayを作る
-                                const temp_concernedUnarrivedArray = [];
-                                schedule.concernedReservedArray.forEach((concerned) => {
-                                    temp_concernedUnarrivedArray.push({
+
+                        // totalReservedNumからconcernedReservedArrayの総人数を引く
+                        res.data.data.schedules[index].totalReservedNum -= schedule.concernedReservedArray.reduce((a, b) => {
+                            return ((a.reservedNum || 0) + (b.reservedNum || 0));
+                        }, {});
+
+                        // checkpointArrayを確認 (APIの仕様でチェックインが発生するまでcheckpointはJSONに生えないので、定義と照らして無かったら作って足す)
+                        const checkpointIdArray = schedule.checkpointArray.map((cp) => { return cp.id; });
+                        requiredCheckpointIdArray.forEach((requiredCheckpointId) => {
+                            if (checkpointIdArray.indexOf(requiredCheckpointId) !== -1) {
+                                return true;
+                            }
+                            // schedule.checkpointArrayに無かった = まだ誰も来てない = unarrivedNumはreservedNumと同じ
+                            res.data.data.schedules[index].checkpointArray.push({
+                                id: requiredCheckpointId,
+                                name: res.data.data.checkpoints[requiredCheckpointId],
+                                unarrivedNum: res.data.data.schedules[index].totalReservedNum,
+                                concernedUnarrivedArray: schedule.concernedReservedArray.map((concerned) => {
+                                    return {
                                         id: concerned.id,
                                         name: concerned.name,
                                         unarrivedNum: concerned.reservedNum,
-                                    });
-                                });
-                                res.data.data.schedules[index].checkpointArray.push({
-                                    id: checkpoint,
-                                    name: res.data.data.checkpoints[checkpoint],
-                                    unarrivedNum: 0,
-                                    concernedUnarrivedArray: temp_concernedUnarrivedArray,
-                                });
+                                    };
+                                }),
                             });
-                        }
-                        // totalReservedNumからconcernedReservedArrayの総人数を引く
-                        let concernedReservedTotal = 0;
-                        schedule.concernedReservedArray.forEach((concerned) => { // ※当面車椅子のみなのでreduceは使えない
-                            concernedReservedTotal += concerned.reservedNum;
+                            return true;
                         });
-                        res.data.data.schedules[index].totalReservedNum -= concernedReservedTotal;
                     });
                     this.scheduleArray = res.data.data.schedules;
                     this.lastupdateStr = `${this.momentObj.format('HH:mm:ss')}時点データ表示中`;
@@ -278,6 +280,9 @@ export default {
             }
             >.status {
                 border-bottom: 1px solid #999;
+                &::before {
+                    content: '　';
+                }
             }
             >.time {
                 font-size: 28px;
@@ -317,6 +322,9 @@ export default {
             .status {
                 background-color: #5190cc;
                 color: #fff;
+                &::before {
+                    content: '受付中';
+                }
             }
         }
         th {
@@ -330,7 +338,9 @@ export default {
         .scheduleheader {
             .status {
                 background-color: #a8a8a8;
-                
+                &::before {
+                    content: '終了';
+                }
             }
         }
         th {
