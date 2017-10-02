@@ -160,6 +160,7 @@ export default {
                 // 通信エラーが起きても画面は白紙にせず維持する
                 axios.get(`${APPCONFIG.API_ENDPOINT}?day=${this.selectedDay}`, {
                     timeout: APPCONFIG.API_TIMEOUT,
+                    auth: APPCONFIG.API_BASICAUTH,
                 }).then((res) => {
                     this.momentObj = moment();
                     if (res.data.error) {

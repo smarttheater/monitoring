@@ -136,6 +136,7 @@ export default {
             return new Promise((resolve) => {
                 axios.get(APPCONFIG.API_ENDPOINT, {
                     timeout: APPCONFIG.API_TIMEOUT,
+                    auth: APPCONFIG.API_BASICAUTH,
                 }).then((res) => {
                     this.momentObj = moment();
                     if (res.data.error) {
@@ -169,13 +170,16 @@ export default {
                         }, {});
 
                         // checkpointArrayを確認 (APIの仕様でチェックインが発生するまでcheckpointはJSONに生えないので、定義と照らして無かったら作って足す)
-                        const checkpointIdArray = schedule.checkpointArray.map((cp) => { return cp.id; });
+                        const tempCheckpointArray = []; // 初手でイレギュラーな順番のチェックインをされるとチェックポイントの並び順が変わることがありえるので別に作って最後に代入する
+                        const checkpointsById = schedule.checkpointArray.reduce((o, c) => Object.assign(o, { [c.id]: c }), {});
+                        const checkpointIdArray = Object.keys(checkpointsById);
                         requiredCheckpointIdArray.forEach((requiredCheckpointId) => {
                             if (checkpointIdArray.indexOf(requiredCheckpointId) !== -1) {
+                                tempCheckpointArray.push(checkpointsById[requiredCheckpointId]);
                                 return true;
                             }
                             // schedule.checkpointArrayに無かった = まだ誰も来てない = unarrivedNumはreservedNumと同じ
-                            res.data.data.schedules[index].checkpointArray.push({
+                            tempCheckpointArray.push({
                                 id: requiredCheckpointId,
                                 name: res.data.data.checkpoints[requiredCheckpointId],
                                 unarrivedNum: res.data.data.schedules[index].totalReservedNum,
@@ -189,6 +193,7 @@ export default {
                             });
                             return true;
                         });
+                        res.data.data.schedules[index].checkpointArray = tempCheckpointArray;
                     });
                     this.scheduleArray = res.data.data.schedules;
                     this.lastupdateStr = `${this.momentObj.format('HH:mm:ss')}時点データ表示中`;
