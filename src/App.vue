@@ -1,6 +1,6 @@
 <template>
 
-<div id="app">
+<div id="app" :class="{ noscroll: ($route.meta.noscroll) }">
     <loading v-if="$store.state.loadingMsg"></loading>
 
     <transition name="fadeup">
@@ -58,6 +58,11 @@ body {
 #app {
     position: relative;
     height: 100%;
+    &.noscroll {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
 }
 
 .content {
@@ -76,7 +81,15 @@ body {
         background-image: url('./assets/icon-clock.svg');
     }
 }
-
+.fade-leave-to {
+    display: none;
+}
+.fade-enter-active, .fade-leave-active {
+    transition: all 1s;
+}
+.fade-enter, .fade-leave-active {
+    opacity: 0;
+}
 
 .fadeup-leave-to {
     display: none;

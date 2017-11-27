@@ -1,94 +1,100 @@
 <template>
-    <div class="content">
-        <myHeader>
-            <div slot="headerMenu" class="statheadermenu">
-                <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(APPCONFIG.UPDATEINTERVAL / 1000)}}秒毎に自動更新)</div>
-                <div class="btn-update" @click="manualUpdate">更新</div>
-            </div>
-        </myHeader>
+<div class="content">
+    <myHeader>
+        <div slot="headerMenu" class="statheadermenu">
+            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>(1分毎に自動更新)</div>
+            <div class="btn-update" @click="manualUpdate">更新</div>
+        </div>
+    </myHeader>
 
-        <errorOneline v-if="errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${errorMsgStr}`"></errorOneline>
+    <errorOneline v-if="$store.state.errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${$store.state.errorMsgStr}`"></errorOneline>
 
-        <div class="clockwrapper" @click="focusCurrentSchedule"><p><span class="iconBefore icon-clock">{{ momentObj.format('YYYY/MM/DD (dd)') }}</span><span class="hhmm">{{ momentObj.format('HH:mm') }}</span></p></div>
-
-        <main>
-            <swiper :options="swiperOption" ref="scheduleSwiper">
-                <swiper-slide v-for="(schedule, index) in scheduleArray" :key="schedule.performanceId"
-                    :class="['schedule', {
-                        'schedule-active': currentScheduleIndex === index,
-                        'schedule-past': currentScheduleIndex > index
-                    }]">
-                    <div class="scheduleheader">
-                        <div class="status"></div>
-                        <div class="time">{{ `${schedule.start_time}～${schedule.end_time}` }}</div>
-                    </div>
-                    <table>
-                        <tbody>
-                            <tr>
-                                <th>来塔予定</th>
-                                <td>
-                                    <p>
-                                        <span class="personNum iconBefore icon-standing">{{ schedule.totalReservedNum }}</span>
-                                    </p>
-                                    <p v-for="concernedReserved in schedule.concernedReservedArray" :key="`${schedule.id}${concernedReserved.name}`">
-                                        <span :class="['personNum iconBefore', `icon-${concernedReserved.name}`]">{{ concernedReserved.reservedNum }}</span>
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr v-for="checkpoint in schedule.checkpointArray" :class="['checkpoint', `checkpoint-${checkpoint.id}`]" :key="`${schedule.performanceId}_${checkpoint.id}`">
-                                <th>{{ checkpoint.name }}<br>未通過</th>
-                                <td>
-                                    <p>
-                                        <span class="personNum iconBefore icon-standing">{{ checkpoint.unarrivedNum }}</span>
-                                    </p>
-                                    <p v-for="concernedUnarrived in checkpoint.concernedUnarrivedArray" :key="`${checkpoint.id}${concernedUnarrived.name}`">
-                                        <span :class="['personNum iconBefore', `icon-${concernedUnarrived.name}`]">{{ concernedUnarrived.unarrivedNum }}</span>
-                                    </p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </swiper-slide>
-            </swiper>
-        </main>
+    <div class="clockwrapper" @click="focusCurrentSchedule">
+        <p><span class="iconBefore icon-clock">{{ $store.state.moment.format('YYYY/MM/DD (dd)') }}</span><span class="hhmm">{{ $store.state.moment.format('HH:mm') }}</span></p>
     </div>
+
+    <main>
+        <swiper :options="swiperOption" ref="scheduleSwiper">
+            <swiper-slide v-for="(schedule, index) in scheduleArray" :key="schedule.performanceId"
+                :class="['schedule', {
+                    'schedule-active': currentScheduleIndex === index,
+                    'schedule-past': currentScheduleIndex > index
+                }]">
+                <div class="scheduleheader">
+                    <div class="status"></div>
+                    <div class="time">{{ `${schedule.start_time}～${schedule.end_time}` }}</div>
+                </div>
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>来塔予定</th>
+                            <td>
+                                <p>
+                                    <span class="personNum iconBefore icon-standing">{{ schedule.totalReservedNum }}</span>
+                                </p>
+                                <p v-for="concernedReserved in schedule.concernedReservedArray" :key="`${schedule.id}${concernedReserved.name}`">
+                                    <span :class="['personNum iconBefore', `icon-${concernedReserved.name}`]">{{ concernedReserved.reservedNum }}</span>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr v-for="checkpoint in schedule.checkpointArray" :class="['checkpoint', `checkpoint-${checkpoint.id}`]" :key="`${schedule.performanceId}_${checkpoint.id}`">
+                            <th>{{ checkpoint.name }}<br>未通過</th>
+                            <td>
+                                <p>
+                                    <span class="personNum iconBefore icon-standing">{{ checkpoint.unarrivedNum }}</span>
+                                </p>
+                                <p v-for="concernedUnarrived in checkpoint.concernedUnarrivedArray" :key="`${checkpoint.id}${concernedUnarrived.name}`">
+                                    <span :class="['personNum iconBefore', `icon-${concernedUnarrived.name}`]">{{ concernedUnarrived.unarrivedNum }}</span>
+                                </p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </swiper-slide>
+            <div class="swiper-scrollbar" slot="scrollbar"></div>
+        </swiper>
+    </main>
+</div>
 </template>
 
 
 <script>
-import { swiper, swiperSlide } from 'vue-awesome-swiper';
+import { swiper, swiperSlide, ScrollBar } from 'vue-awesome-swiper';
 import * as axios from 'axios';
 import * as moment from 'moment';
 
 require('moment/locale/ja'); // 軽量化のためja以外のlocaleはwebpackビルド時に消す
+
+moment.locale('ja');
 const APPCONFIG = require('../config').default.VSTRSTAT;
 
 export default {
     components: {
         swiper,
         swiperSlide,
+        ScrollBar,
     },
     data() {
         return {
             APPCONFIG,
             flg_loaded: false,
-            errorMsgStr: '',
             lastupdateStr: '未取得',
-            momentObj: moment(),
             scheduleArray: [],
             currentScheduleIndex: null,
             timeoutInstance_IntervalFetch: null,
             swiperOption: {
                 autoplay: false,
                 centeredSlides: true,
+                grabCursor: true,
+                mousewheelControl: true,
                 paginationClickable: false,
+                scrollbar: '.swiper-scrollbar',
                 slidesPerView: 3,
                 spaceBetween: 30,
             },
         };
     },
     created() {
-        moment.locale('ja');
         // データ初期化後に自動取得開始
         this.$store.commit('SET_LOADINGMSG', '画面初期化中...');
         this.fetchData().then(() => {
@@ -98,39 +104,69 @@ export default {
         });
     },
     methods: {
-        // 文字列整形用 (Stringのidx文字目にstrを差し込む)
-        spliceStr(targetStr, idx, str) {
-            let ret = targetStr;
-            try {
-                ret = (targetStr.slice(0, idx) + str + targetStr.slice(idx));
-            } catch (e) {
-                console.log(e);
-            }
-            return ret || targetStr;
-        },
+        // 現在時刻とパフォーマンスのstart_time～end_timeでisBetweenしてtrueだったscheduleをcurrentScheduleIndexとする
         focusCurrentSchedule() {
-            // 現在時刻とstart_time～end_timeでisBetweenしてtrueのscheduleをcurrentScheduleIndexとする
-            // ※通信が途絶していても表示更新するためfetchData()と切り分けている
-            if (this.scheduleArray.length < 2) {
-                return false;
-            }
-            const ymd = this.momentObj.format('YYYY-MM-DD');
-            let currentIndex = null; // 現在受付中のschedule
-            this.scheduleArray.forEach((schedule, index) => {
-                if (this.momentObj.isBetween(`${ymd} ${schedule.start_time}:00`, `${ymd} ${schedule.end_time}:59`)) {
-                    currentIndex = index;
-                    return false;
-                }
-                return true;
+            // パフォーマンスが1つしか無いので無用
+            if (this.scheduleArray.length < 2) { return false; }
+
+            const ymd = this.$store.state.moment.format('YYYY-MM-DD');
+            // 現在受付中のschedule
+            let currentIndex = this.scheduleArray.findIndex((schedule) => {
+                return (this.$store.state.moment.isBetween(`${ymd} ${schedule.start_time}:00`, `${ymd} ${schedule.end_time}:59`));
             });
-            // 受付中のscheduleが無かった場合は全て終了済みかチェック
-            if (!currentIndex && this.momentObj.isAfter(`${ymd} ${this.scheduleArray[this.scheduleArray.length - 1].end_time}:59`)) {
-                // 全て終了済みにするためカンスト
+            // 受付中のscheduleが無かった場合全て終了済みなのかチェック
+            if (!currentIndex && this.$store.state.moment.isAfter(`${ymd} ${this.scheduleArray[this.scheduleArray.length - 1].end_time}:59`)) {
+                // 全て終了済みの表示にするためカンスト
                 currentIndex = Number.MAX_VALUE;
             }
+
+            // アクティブなパフォーマンスへswiperのフォーカスを移動する
+            if (currentIndex <= this.scheduleArray.length) {
+                this.$refs.scheduleSwiper.swiper.slideTo(currentIndex);
+            }
             this.currentScheduleIndex = currentIndex;
-            // swiperのフォーカスを移動する
-            return this.$refs.scheduleSwiper.swiper.slideTo(currentIndex);
+            return true;
+        },
+        manipulateScheduleData(checkpoints, scheduleArray) {
+            // チェックポイント定義
+            const requiredCheckpointIdArray = Object.keys(checkpoints);
+            scheduleArray.forEach((schedule) => {
+                // 時刻に : を入れる
+                schedule.start_time = moment(schedule.start_time, 'hmm').format('HH:mm');
+                schedule.end_time = moment(schedule.end_time, 'hmm').format('HH:mm');
+
+                // totalReservedNumからconcernedReservedArrayの総人数を引く
+                schedule.totalReservedNum -= schedule.concernedReservedArray.reduce((a, b) => {
+                    return ((a.reservedNum || 0) + (b.reservedNum || 0));
+                }, {});
+
+                // scheduleオブジェクト内のcheckpointArrayを分解
+                const existingCheckpointsById = schedule.checkpointArray.reduce((o, c) => Object.assign(o, { [c.id]: c }), {});
+                const existingCheckpointIdArray = Object.keys(existingCheckpointsById);
+
+                // APIの仕様でチェックインが発生するまでschedule.checkpointArrayにcheckpointは生えないので、定義と照らして無かったら作って足す処理をする
+                // requiredCheckpointIdArrayの順でcheckpointArrayを構築していく (唯一のチェックインがイレギュラーな順番でのチェックインだった時に表示の並び順がそれに引っ張られないように)
+                schedule.checkpointArray = requiredCheckpointIdArray.map((requiredCheckpointId) => {
+                    // 既にあるものはそのまま返す
+                    if (existingCheckpointIdArray.indexOf(requiredCheckpointId) !== -1) {
+                        return existingCheckpointsById[requiredCheckpointId];
+                    }
+                    // schedule.checkpointArrayに無かった = まだ誰も来てない = unarrivedNumはreservedNumと同じ
+                    return {
+                        id: requiredCheckpointId,
+                        name: checkpoints[requiredCheckpointId],
+                        unarrivedNum: schedule.totalReservedNum,
+                        concernedUnarrivedArray: schedule.concernedReservedArray.map((concerned) => {
+                            return {
+                                id: concerned.id,
+                                name: concerned.name,
+                                unarrivedNum: concerned.reservedNum,
+                            };
+                        }),
+                    };
+                });
+            });
+            return scheduleArray;
         },
         fetchData() {
             return new Promise((resolve) => {
@@ -138,82 +174,43 @@ export default {
                     timeout: APPCONFIG.API_TIMEOUT,
                     auth: APPCONFIG.API_BASICAUTH,
                 }).then((res) => {
-                    this.momentObj = moment();
+                    this.$store.commit('UPDATE_MOMENTOBJ');
+                    let errorMsg = '';
                     if (res.data.error) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [${res.data.error}]`;
-                        return false;
+                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [${res.data.error}]`;
+                    } else if (!res.data || !res.data.data || !Array.isArray(res.data.data.schedules)) {
+                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [取得データが異常です]`;
+                    } else if (!res.data.data.schedules[0]) {
+                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [スケジュールデータが見つかりませんでした]`;
+                    } else if (!res.data.data.checkpoints || !Object.keys(res.data.data.checkpoints).length) {
+                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [チェックポイントの定義が読み込めませんでした]`;
                     }
-                    if (!res.data || !res.data.data || !Array.isArray(res.data.data.schedules)) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [取得データが異常です]`;
-                        return false;
+                    if (errorMsg) {
+                        return this.$store.commit('SET_ERRORMSG', errorMsg);
                     }
-                    if (!res.data.data.schedules[0]) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [スケジュールデータが空です]`;
-                        return false;
-                    }
-                    // start_timeでソート
-                    res.data.data.schedules.sort((a, b) => {
-                        if (a.start_time < b.start_time) return -1;
-                        if (a.start_time > b.start_time) return 1;
-                        return 0;
-                    });
-                    // 整形処理
-                    const requiredCheckpointIdArray = Object.keys(res.data.data.checkpoints); // チェックポイント定義
-                    res.data.data.schedules.forEach((schedule, index) => {
-                        // 時刻に : を入れる
-                        res.data.data.schedules[index].start_time = this.spliceStr(schedule.start_time, 2, ':');
-                        res.data.data.schedules[index].end_time = this.spliceStr(schedule.end_time, 2, ':');
-
-                        // totalReservedNumからconcernedReservedArrayの総人数を引く
-                        res.data.data.schedules[index].totalReservedNum -= schedule.concernedReservedArray.reduce((a, b) => {
-                            return ((a.reservedNum || 0) + (b.reservedNum || 0));
-                        }, {});
-
-                        // checkpointArrayを確認 (APIの仕様でチェックインが発生するまでcheckpointはJSONに生えないので、定義と照らして無かったら作って足す)
-                        const tempCheckpointArray = []; // 初手でイレギュラーな順番のチェックインをされるとチェックポイントの並び順が変わることがありえるので別に作って最後に代入する
-                        const checkpointsById = schedule.checkpointArray.reduce((o, c) => Object.assign(o, { [c.id]: c }), {});
-                        const checkpointIdArray = Object.keys(checkpointsById);
-                        requiredCheckpointIdArray.forEach((requiredCheckpointId) => {
-                            if (checkpointIdArray.indexOf(requiredCheckpointId) !== -1) {
-                                tempCheckpointArray.push(checkpointsById[requiredCheckpointId]);
-                                return true;
-                            }
-                            // schedule.checkpointArrayに無かった = まだ誰も来てない = unarrivedNumはreservedNumと同じ
-                            tempCheckpointArray.push({
-                                id: requiredCheckpointId,
-                                name: res.data.data.checkpoints[requiredCheckpointId],
-                                unarrivedNum: res.data.data.schedules[index].totalReservedNum,
-                                concernedUnarrivedArray: schedule.concernedReservedArray.map((concerned) => {
-                                    return {
-                                        id: concerned.id,
-                                        name: concerned.name,
-                                        unarrivedNum: concerned.reservedNum,
-                                    };
-                                }),
-                            });
-                            return true;
-                        });
-                        res.data.data.schedules[index].checkpointArray = tempCheckpointArray;
-                    });
-                    this.scheduleArray = res.data.data.schedules;
-                    this.lastupdateStr = `${this.momentObj.format('HH:mm:ss')}時点データ表示中`;
-                    this.errorMsgStr = '';
+                    this.$store.commit('CLEAR_ERRORMSG');
+                    this.scheduleArray = this.manipulateScheduleData(res.data.data.checkpoints, res.data.data.schedules);
+                    this.lastupdateStr = `${this.$store.state.moment.format('HH:mm:ss')}時点データ表示中`;
                     return true;
                 }).catch((err) => {
-                    this.momentObj = moment();
-                    this.errorMsgStr = `(${moment().format('HH:mm:ss')}) [${err.message}]`;
+                    this.$store.commit('UPDATE_MOMENTOBJ');
+                    this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [通信エラー][来島状況取得] [${err.message}]`);
                 }).then(() => {
                     this.focusCurrentSchedule();
                     resolve();
                 });
             });
         },
+        getNextTickUnixtime() {
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), (now.getMinutes() + 1), 0, 0) - now;
+        },
         setFetchDataInterval() {
             this.timeoutInstance_IntervalFetch = setTimeout(() => {
                 this.fetchData().then(() => {
-                    this.setFetchDataInterval(APPCONFIG.UPDATEINTERVAL);
+                    this.setFetchDataInterval();
                 });
-            }, APPCONFIG.UPDATEINTERVAL);
+            }, this.getNextTickUnixtime());
         },
         manualUpdate() {
             if (this.$store.state.loadingMsg) { return false; }

@@ -13,7 +13,6 @@ const Router = new VueRouter({
             component: require('../pages/Home.vue').default,
             meta: {
                 title: '東京タワー業務用画面',
-                noauth: true,
             },
         },
         {
@@ -23,7 +22,6 @@ const Router = new VueRouter({
             component: require('../pages/Rsrvstat.vue').default,
             meta: {
                 title: '東京タワー予約状況',
-                noauth: false,
             },
         },
         {
@@ -33,7 +31,6 @@ const Router = new VueRouter({
             component: require('../pages/Vstrstat.vue').default,
             meta: {
                 title: '東京タワー来塔状況',
-                noauth: false,
             },
         },
     ],

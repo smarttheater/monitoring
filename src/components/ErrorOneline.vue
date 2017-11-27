@@ -9,6 +9,7 @@ export default {
     props: {
         errorMsgStr: {
             type: String,
+            required: true,
         },
     },
 };

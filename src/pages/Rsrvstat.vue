@@ -1,5 +1,5 @@
 <template>
-<div :class="['content', {'onerror': errorMsgStr}]">
+<div :class="['content', {'onerror': $store.state.errorMsgStr}]">
     <myHeader>
         <div slot="headerMenu" class="statheadermenu">
             <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(APPCONFIG.UPDATEINTERVAL / 1000)}}秒毎に自動更新)</div>
@@ -9,57 +9,58 @@
 
     <div class="timesettings">
         <select class="date" @change="changeDay">
-            <option v-if="$route.query.day" :value="$route.query.day" selected>{{ $route.query.day }}</option>
+            <option v-if="$route.query.day" :value="$route.query.day" selected>{{ moment($route.query.day).format('YYYY-MM-DD (ddd)') }}</option>
             <option v-for="day in dayMomentArray" :key="day.unix()" :value="day.format('YYYYMMDD')">{{ day.format('YYYY-MM-DD (ddd)') }}</option>
         </select>
         <div v-if="isToday" class="time">
-            <p class="clock"><span>{{ momentObj.format('HH:mm') }}</span></p>
+            <clock></clock>
             <div class="option"><label><input type="checkbox" v-model="bool_hidepasthours"> 過ぎた時間帯を隠す</label></div>
         </div>
     </div>
 
-    <errorOneline v-if="errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${errorMsgStr}`"></errorOneline>
+    <errorOneline v-if="$store.state.errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${$store.state.errorMsgStr}`"></errorOneline>
 
     <transition name="fadeup" appear>
-    <main v-if="hourArray[0]" :key="`${selectedDay}hours`">
-        <div v-for="hour in hourArray" :key="`${selectedDay}${hour}`"
-            :class="['hour',
-                {
-                    'hour-active': (isToday && momentObj.format('HH') === hour),
-                    'hour-hidden': (bool_hidepasthours && momentObj.isAfter(moment(`${selectedDay} ${parseInt(hour, 10)}:59:59`, 'YYYYMMDD H:mm:ss'))),
-                }
-            ]">
-            <div class="items">
-                <div v-for="performance in performancesByHour[hour]" :key="`${performance.day}${performance.start_time}`"
-                    :class="['item', getStatusClassNameByPerformance(performance)]">
-                    <p class="time">{{ performance.start_time }}～</p>
-                    <div class="wrapper-status">
-                        <p class="status">{{ performance.seat_status }}</p>
+        <main v-if="hourArray[0]" :key="`${selectedDay}hours`">
+            <div v-for="hour in hourArray" :key="`${selectedDay}${hour}`"
+                :class="['hour',
+                    {
+                        'hour-active': (isToday && $store.state.moment.format('HH') === hour),
+                        'hour-hidden': (isToday && bool_hidepasthours && $store.state.moment.isAfter(moment(`${selectedDay} ${parseInt(hour, 10)}:59:59`, 'YYYYMMDD H:mm:ss'))),
+                    }
+                ]">
+                <div class="items">
+                    <div v-for="performance in performancesByHour[hour]" :key="`${performance.day}${performance.start_time}`"
+                        :class="['item', (isToday) ? getStatusClassNameByPerformance($store.state.moment, performance, 10) : 'item-capable']">
+                        <p class="time">{{ performance.start_time }}～</p>
+                        <div class="wrapper-status">
+                            <p class="status">{{ performance.seat_status }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
     </transition>
 </div>
 </template>
 
 
 <script>
-import * as axios from 'axios';
 import * as moment from 'moment';
 import 'twix';
+import { getNextTickUnixtime, getStatusClassNameByPerformance, fetchScheduleStatus } from '../mixins/';
 
 const APPCONFIG = require('../config').default.RSRVSTAT;
 
 export default {
+    components: {
+        Clock: require('../components/Clock.vue').default,
+    },
     data() {
         return {
             APPCONFIG,
-            errorMsgStr: '',
             lastupdateStr: '未取得',
             moment,
-            momentObj: moment(),
             dayMomentArray: [],
             selectedDay: this.$route.query.day || moment().format('YYYYMMDD'),
             hourArray: [],
@@ -69,8 +70,11 @@ export default {
         };
     },
     computed: {
+        dayparam() {
+            return this.$route.query.day;
+        },
         isToday() {
-            return (this.momentObj.format('YYYYMMDD') === this.selectedDay);
+            return (this.selectedDay === this.$store.state.moment.format('YYYYMMDD'));
         },
     },
     created() {
@@ -78,6 +82,9 @@ export default {
         this.manualUpdate();
     },
     methods: {
+        fetchScheduleStatus,
+        getNextTickUnixtime,
+        getStatusClassNameByPerformance,
         // 日付選択肢を用意(7日先まで)
         createDaySelect() {
             const itr = moment.twix(moment(), moment().add(7, 'days')).iterate('days');
@@ -91,28 +98,9 @@ export default {
             this.selectedDay = e.target.value;
             this.manualUpdate();
         },
-        // 個別にパフォーマンス情報を見てCSSクラス付与
-        getStatusClassNameByPerformance(performance) {
-            let className = '';
-            const ymd = moment(this.selectedDay, 'YYYYMMDD').format('YYYY-MM-DD');
-            // 開場中ならcurrent
-            if (this.momentObj.isBetween(`${ymd} ${performance.start_time}:00`, `${ymd} ${performance.end_time}:59`)) {
-                className += 'item-current';
-            }
-            // 開場時間を過ぎてたらsoldout
-            if (this.momentObj.isAfter(`${ymd} ${performance.end_time}:59`)) {
-                return `${className} item-soldout`;
-            }
-            // 残数で分岐
-            const num = parseInt(performance.seat_status, 10) || 0;
-            if (num <= APPCONFIG.STATUS_THRESHOLD.RED && num > 0) {
-                return `${className} item-last`;
-            } else if (num === 0) {
-                return `${className} item-soldout`;
-            }
-            return `${className} item-capable`;
-        },
-        updateStatus(performanceArray) {
+        async updateStatus() {
+            const performanceArray = await this.fetchScheduleStatus(this.selectedDay);
+            if (!Array.isArray(performanceArray)) { return false; }
             // 1hごとにまとめる (start_timeの最初2文字を時間とする)
             const hourArray = [];
             const performancesByHour = {};
@@ -136,74 +124,34 @@ export default {
                 return true;
             });
 
-            // 時間割を念のためソート
-            hourArray.sort((a, b) => {
-                if (a < b) { return -1; }
-                if (a > b) { return 1; }
-                return 0;
-            });
-
-            // 時間割内のパフォーマンスを念のためソート
-            hourArray.forEach((hour) => {
-                performancesByHour[hour].sort((a, b) => {
-                    if (a.start_time < b.start_time) { return -1; }
-                    if (a.start_time === b.start_time) { return 0; }
-                    return 1;
-                });
-            });
-
             this.hourArray = hourArray;
             this.performancesByHour = performancesByHour;
-        },
-        fetchData() {
-            return new Promise((resolve) => {
-                // 通信エラーが起きても画面は白紙にせず維持する
-                axios.get(`${APPCONFIG.API_ENDPOINT}?day=${this.selectedDay}`, {
-                    timeout: APPCONFIG.API_TIMEOUT,
-                    auth: APPCONFIG.API_BASICAUTH,
-                }).then((res) => {
-                    this.momentObj = moment();
-                    if (res.data.error) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [${res.data.error}]`;
-                        return false;
-                    }
-                    if (!res.data || !res.data.data || !Array.isArray(res.data.data)) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [取得データが異常です]`;
-                        return false;
-                    }
-                    if (!res.data.data[0]) {
-                        this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [スケジュールデータが見つかりませんでした]`;
-                        return false;
-                    }
-                    this.updateStatus(res.data.data);
-                    this.lastupdateStr = `${this.momentObj.format('HH:mm:ss')}時点データ表示中`;
-                    this.errorMsgStr = '';
-                    return true;
-                }).catch((err) => {
-                    this.momentObj = moment();
-                    this.errorMsgStr = `(${this.momentObj.format('HH:mm:ss')}) [通信エラー][${err.message}]`;
-                }).then(() => {
-                    resolve();
-                });
-            });
+            this.lastupdateStr = `${this.$store.state.moment.format('HH:mm:ss')}時点データ表示中`;
+
+            return true;
         },
         setFetchDataInterval() {
             this.timeoutInstance_IntervalFetch = setTimeout(() => {
-                this.fetchData().then(() => {
-                    this.setFetchDataInterval(APPCONFIG.UPDATEINTERVAL);
+                this.updateStatus().then(() => {
+                    this.setFetchDataInterval();
                 });
-            }, APPCONFIG.UPDATEINTERVAL);
+            }, this.getNextTickUnixtime());
         },
         manualUpdate() {
             if (this.$store.state.loadingMsg) { return false; }
             this.$store.commit('SET_LOADINGMSG', '予約状況を取得中...');
             clearTimeout(this.timeoutInstance_IntervalFetch);
-            return this.fetchData().catch((err) => {
+            return this.updateStatus().catch((err) => {
                 console.log(err);
             }).then(() => {
                 this.$store.commit('CLEAR_LOADINGMSG');
                 this.setFetchDataInterval();
             });
+        },
+        watch: {
+            dayparam() {
+                this.manualUpdate();
+            },
         },
     },
 };
