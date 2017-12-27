@@ -5,13 +5,8 @@
   ],
   "plugins": [
     "transform-runtime",
+    "transform-vue-jsx",
     "transform-async-to-generator"
   ],
-  "comments": false,
-  "env": {
-    "test": {
-      "presets": ["env", "vue-app"],
-      "plugins": [ "istanbul" ]
-    }
-  }
+  "comments": false
 }

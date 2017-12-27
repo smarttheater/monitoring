@@ -30,18 +30,18 @@
                             <th>来塔予定</th>
                             <td>
                                 <p>
-                                    <span class="personNum iconBefore icon-standing">{{ schedule.totalReservedNum }}</span>
+                                    <span class="personNum iconBefore icon-standing">{{ schedule.normalReservedNum }}</span>
                                 </p>
-                                <p v-for="concernedReserved in schedule.concernedReservedArray" :key="`${schedule.id}${concernedReserved.name}`">
-                                    <span :class="['personNum iconBefore', `icon-${concernedReserved.name}`]">{{ concernedReserved.reservedNum }}</span>
+                                <p v-for="concernedReservation in schedule.concernedReservationArray" :key="`${schedule.id}${concernedReservation.name}`">
+                                    <span :class="['personNum iconBefore', `icon-${concernedReservation.name}`]">{{ concernedReservation.reservedNum }}</span>
                                 </p>
                             </td>
                         </tr>
-                        <tr v-for="checkpoint in schedule.checkpointArray" :class="['checkpoint', `checkpoint-${checkpoint.id}`]" :key="`${schedule.performanceId}_${checkpoint.id}`">
+                        <tr v-for="checkpoint in schedule.checkpointStatusArray" :class="['checkpoint', `checkpoint-${checkpoint.id}`]" :key="`${schedule.performanceId}_${checkpoint.id}`">
                             <th>{{ checkpoint.name }}<br>未通過</th>
                             <td>
                                 <p>
-                                    <span class="personNum iconBefore icon-standing">{{ checkpoint.unarrivedNum }}</span>
+                                    <span class="personNum iconBefore icon-standing">{{ checkpoint.normalUnarrivedNum }}</span>
                                 </p>
                                 <p v-for="concernedUnarrived in checkpoint.concernedUnarrivedArray" :key="`${checkpoint.id}${concernedUnarrived.name}`">
                                     <span :class="['personNum iconBefore', `icon-${concernedUnarrived.name}`]">{{ concernedUnarrived.unarrivedNum }}</span>
@@ -59,9 +59,16 @@
 
 
 <script>
-import { swiper, swiperSlide, ScrollBar } from 'vue-awesome-swiper';
+/*
+  来塔状況確認用画面(通称:現場のおばちゃん画面)
+  ・パフォーマンスごとの来塔予定者数とチェックポイントごとの未到着者数を表示する
+  ・車椅子の相手は注意が必要なので表示とカウントの枠を分ける
+  →(現状は車椅子だけだが他に要注意カテゴリが発生する可能性はあるので APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY で注意対象の券種カテゴリを定義する)
+*/
+import { swiper, swiperSlide } from 'vue-awesome-swiper';
 import * as axios from 'axios';
 import * as moment from 'moment';
+import { fetchScheduleStatus, getNextTickUnixtime } from '../mixins/';
 
 require('moment/locale/ja'); // 軽量化のためja以外のlocaleはwebpackビルド時に消す
 
@@ -72,13 +79,13 @@ export default {
     components: {
         swiper,
         swiperSlide,
-        ScrollBar,
     },
     data() {
         return {
             APPCONFIG,
             flg_loaded: false,
             lastupdateStr: '未取得',
+            chekpointDefinition: {},
             scheduleArray: [],
             currentScheduleIndex: null,
             timeoutInstance_IntervalFetch: null,
@@ -97,13 +104,19 @@ export default {
     created() {
         // データ初期化後に自動取得開始
         this.$store.commit('SET_LOADINGMSG', '画面初期化中...');
-        this.fetchData().then(() => {
-            this.flg_loaded = true;
-            this.setFetchDataInterval();
-            this.$store.commit('CLEAR_LOADINGMSG');
+        this.refreshCheckpointsData().then(() => {
+            this.fetchData().then(() => {
+                this.flg_loaded = true;
+                this.setFetchDataInterval();
+                this.$store.commit('CLEAR_LOADINGMSG');
+            });
         });
     },
+    beforeDestroy() {
+        clearTimeout(this.timeoutInstance_IntervalFetch);
+    },
     methods: {
+        fetchScheduleStatus,
         // 現在時刻とパフォーマンスのstart_time～end_timeでisBetweenしてtrueだったscheduleをcurrentScheduleIndexとする
         focusCurrentSchedule() {
             // パフォーマンスが1つしか無いので無用
@@ -127,90 +140,125 @@ export default {
             this.currentScheduleIndex = currentIndex;
             return true;
         },
-        manipulateScheduleData(checkpoints, scheduleArray) {
-            // チェックポイント定義
-            const requiredCheckpointIdArray = Object.keys(checkpoints);
-            scheduleArray.forEach((schedule) => {
-                // 時刻に : を入れる
-                schedule.start_time = moment(schedule.start_time, 'hmm').format('HH:mm');
-                schedule.end_time = moment(schedule.end_time, 'hmm').format('HH:mm');
-
-                // totalReservedNumからconcernedReservedArrayの総人数を引く
-                schedule.totalReservedNum -= schedule.concernedReservedArray.reduce((a, b) => {
-                    return ((a.reservedNum || 0) + (b.reservedNum || 0));
-                }, {});
-
-                // scheduleオブジェクト内のcheckpointArrayを分解
-                const existingCheckpointsById = schedule.checkpointArray.reduce((o, c) => Object.assign(o, { [c.id]: c }), {});
-                const existingCheckpointIdArray = Object.keys(existingCheckpointsById);
-
-                // APIの仕様でチェックインが発生するまでschedule.checkpointArrayにcheckpointは生えないので、定義と照らして無かったら作って足す処理をする
-                // requiredCheckpointIdArrayの順でcheckpointArrayを構築していく (唯一のチェックインがイレギュラーな順番でのチェックインだった時に表示の並び順がそれに引っ張られないように)
-                schedule.checkpointArray = requiredCheckpointIdArray.map((requiredCheckpointId) => {
-                    // 既にあるものはそのまま返す
-                    if (existingCheckpointIdArray.indexOf(requiredCheckpointId) !== -1) {
-                        return existingCheckpointsById[requiredCheckpointId];
-                    }
-                    // schedule.checkpointArrayに無かった = まだ誰も来てない = unarrivedNumはreservedNumと同じ
-                    return {
-                        id: requiredCheckpointId,
-                        name: checkpoints[requiredCheckpointId],
-                        unarrivedNum: schedule.totalReservedNum,
-                        concernedUnarrivedArray: schedule.concernedReservedArray.map((concerned) => {
-                            return {
-                                id: concerned.id,
-                                name: concerned.name,
-                                unarrivedNum: concerned.reservedNum,
-                            };
-                        }),
-                    };
-                });
+        // APIが返してくるJSONを実際に使える形に整形する
+        manipulateScheduleData(scheduleArray) {
+            // カテゴリ別で予約数をカウントするが reservationCountsByTicketType には ticketCategory が入っていないので辞書を作っておく
+            const ticketCategoryByCode = {};
+            scheduleArray[0].checkinCountsByWhere[0].checkinCountsByTicketType.forEach((ticketType) => {
+                ticketCategoryByCode[ticketType.ticketType] = ticketType.ticketCategory;
             });
-            return scheduleArray;
+
+            return scheduleArray.map((schedule) => {
+                // ticketCategory ごとの予約総数を求める。同時に平常(concerned)と要注意(notConcerned)の括りでも数える。
+                const totalReservedNumByCategory = {
+                    notConcerned: 0,
+                    concerned: 0,
+                };
+                schedule.reservationCountsByTicketType.forEach((ticketType) => {
+                    if (typeof totalReservedNumByCategory[ticketCategoryByCode[ticketType]] !== 'number') {
+                        totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] = 0;
+                    }
+                    totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] += ticketType.count;
+
+                    if (APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketCategoryByCode[ticketType.ticketType]) === -1) {
+                        totalReservedNumByCategory.notConcerned += ticketType.count;
+                    } else {
+                        totalReservedNumByCategory.concerned += ticketType.count;
+                    }
+                });
+
+                return {
+                    performanceId: schedule.id,
+                    start_time: moment(schedule.startDate).format('HH:mm'),
+                    end_time: moment(schedule.endDate).format('HH:mm'),
+                    normalReservedNum: totalReservedNumByCategory.notConcerned,
+                    concernedReservationArray: APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
+                        return {
+                            name: code,
+                            reservedNum: totalReservedNumByCategory[code],
+                        };
+                    }),
+                    checkpointStatusArray: schedule.checkinCountsByWhere.map((countData) => {
+                        // ticketCategory ごとのチェックイン済み数を求める。同時に平常(concerned)と要注意(notConcerned)の括りでも数える。
+                        const totalCheckinNumByCategory = {
+                            notConcerned: 0,
+                            concerned: 0,
+                        };
+                        countData.checkinCountsByTicketType.forEach((ticketType) => {
+                            // ※こちらの ticketType には ticketCategory が入っている
+                            if (typeof totalCheckinNumByCategory[ticketType.ticketCategory] !== 'number') {
+                                totalCheckinNumByCategory[ticketType.ticketCategory] = 0;
+                            }
+                            totalCheckinNumByCategory[ticketType.ticketCategory] += ticketType.count;
+
+                            if (APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketType.ticketCategory) === -1) {
+                                totalCheckinNumByCategory.notConcerned += ticketType.count;
+                            } else {
+                                totalCheckinNumByCategory.concerned += ticketType.count;
+                            }
+                        });
+
+                        return {
+                            id: countData.where,
+                            name: this.chekpointDefinition[countData.where],
+                            normalUnarrivedNum: (totalReservedNumByCategory.notConcerned - totalCheckinNumByCategory.notConcerned),
+                            concernedUnarrivedArray: APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
+                                return {
+                                    name: code,
+                                    unarrivedNum: (totalReservedNumByCategory[code] - totalCheckinNumByCategory[code]),
+                                };
+                            }),
+                        };
+                    }),
+                };
+            });
         },
-        fetchData() {
+        refreshCheckpointsData() {
             return new Promise((resolve) => {
-                axios.get(APPCONFIG.API_ENDPOINT, {
+                axios.get(APPCONFIG.API_CHECKPOINTDIFINITION_ENDPOINT, {
                     timeout: APPCONFIG.API_TIMEOUT,
                     auth: APPCONFIG.API_BASICAUTH,
                 }).then((res) => {
-                    this.$store.commit('UPDATE_MOMENTOBJ');
-                    let errorMsg = '';
-                    if (res.data.error) {
-                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [${res.data.error}]`;
-                    } else if (!res.data || !res.data.data || !Array.isArray(res.data.data.schedules)) {
-                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [取得データが異常です]`;
-                    } else if (!res.data.data.schedules[0]) {
-                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [スケジュールデータが見つかりませんでした]`;
-                    } else if (!res.data.data.checkpoints || !Object.keys(res.data.data.checkpoints).length) {
-                        errorMsg = `(${this.$store.state.moment.format('HH:mm:ss')}) [チェックポイントの定義が読み込めませんでした]`;
+                    if (!Array.isArray(res.data) || !res.data.length) {
+                        return this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [チェックポイントの定義が読み込めませんでした][/places/checkinGate]`);
                     }
-                    if (errorMsg) {
-                        return this.$store.commit('SET_ERRORMSG', errorMsg);
-                    }
+                    res.data.forEach((checkpoint) => {
+                        this.chekpointDefinition[checkpoint.identifier] = checkpoint.name;
+                    });
                     this.$store.commit('CLEAR_ERRORMSG');
-                    this.scheduleArray = this.manipulateScheduleData(res.data.data.checkpoints, res.data.data.schedules);
-                    this.lastupdateStr = `${this.$store.state.moment.format('HH:mm:ss')}時点データ表示中`;
                     return true;
                 }).catch((err) => {
-                    this.$store.commit('UPDATE_MOMENTOBJ');
-                    this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [通信エラー][来島状況取得] [${err.message}]`);
+                    this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [通信エラー][チェックポイント一覧取得] [${err.message}]`);
                 }).then(() => {
-                    this.focusCurrentSchedule();
                     resolve();
                 });
             });
         },
-        getNextTickUnixtime() {
-            const now = new Date();
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), (now.getMinutes() + 1), 0, 0) - now;
+        fetchData() {
+            return new Promise(async (resolve) => {
+                // 今日一日の全パフォーマンスを取得対象にする
+                const params = {
+                    startFrom: new Date(),
+                    startThrough: new Date(),
+                };
+                params.startFrom.setHours(0, 0, 0, 0);
+                params.startThrough.setHours(23, 59, 59, 999);
+
+                const scheduleArray = await this.fetchScheduleStatus(params);
+                if (typeof scheduleArray[0] === 'object') {
+                    this.scheduleArray = this.manipulateScheduleData(scheduleArray);
+                    this.lastupdateStr = `${this.$store.state.moment.format('HH:mm:ss')}時点データ表示中`;
+                }
+                this.focusCurrentSchedule();
+                resolve();
+            });
         },
         setFetchDataInterval() {
             this.timeoutInstance_IntervalFetch = setTimeout(() => {
                 this.fetchData().then(() => {
                     this.setFetchDataInterval();
                 });
-            }, this.getNextTickUnixtime());
+            }, getNextTickUnixtime());
         },
         manualUpdate() {
             if (this.$store.state.loadingMsg) { return false; }
@@ -310,11 +358,11 @@ export default {
                 margin-right: 10px;
                 background-image: url('../assets/icon-standing.svg');
             }
-            &.icon-wheelchair::before {
+            &.icon-Wheelchair::before {
                 width: 24px;
                 height: 24px;
                 margin-right: 14px;
-                background-image: url('../assets/icon-wheelchair.svg');
+                background-image: url('../assets/icon-Wheelchair.svg');
             }
         }
     }

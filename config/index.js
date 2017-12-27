@@ -1,5 +1,5 @@
 'use strict'
-// Template version: 1.2.4
+// Template version: 1.2.7
 // see http://vuejs-templates.github.io/webpack for documentation.
 
 const path = require('path')
@@ -61,7 +61,7 @@ module.exports = {
      * Source Maps
      */
 
-    productionSourceMap: false,
+    productionSourceMap: true,
     // https://webpack.js.org/configuration/devtool/#production
     devtool: '#source-map',
 

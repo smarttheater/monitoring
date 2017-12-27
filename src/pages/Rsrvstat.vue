@@ -32,9 +32,15 @@
                 <div class="items">
                     <div v-for="performance in performancesByHour[hour]" :key="`${performance.day}${performance.start_time}`"
                         :class="['item', (isToday) ? getStatusClassNameByPerformance($store.state.moment, performance, 10) : 'item-capable']">
-                        <p class="time">{{ performance.start_time }}～</p>
+                        <p class="time">{{ performance.start_time }}～ ({{ performance.tour_number }})</p>
                         <div class="wrapper-status">
-                            <p class="status">{{ performance.seat_status }}</p>
+                            <p class="status-inner">
+                                <span class="status status-normal">{{ performance.seat_status }}</span>
+                                <span class="status status-wheelchair">{{ performance.wheelchair_available }}</span>
+                            </p>
+                            <p class="exstatus">
+                                <span class="exstatus-sales_textstatus">{{ performance.sales_textstatus }}</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -46,6 +52,10 @@
 
 
 <script>
+/*
+  在庫状況確認用画面
+  ・現場のPOS横などに配置したタブレットから参照するのがメインだがStaffページからもリンクしてくる
+*/
 import * as moment from 'moment';
 import 'twix';
 import { getNextTickUnixtime, getStatusClassNameByPerformance, fetchScheduleStatus } from '../mixins/';
@@ -81,42 +91,62 @@ export default {
         this.createDaySelect();
         this.manualUpdate();
     },
+    beforeDestroy() {
+        clearTimeout(this.timeoutInstance_IntervalFetch);
+    },
     methods: {
         fetchScheduleStatus,
-        getNextTickUnixtime,
         getStatusClassNameByPerformance,
         // 日付選択肢を用意(7日先まで)
         createDaySelect() {
-            const itr = moment.twix(moment(), moment().add(7, 'days')).iterate('days');
-            const range = [];
-            while (itr.hasNext()) {
-                range.push(itr.next());
-            }
-            this.dayMomentArray = range;
+            this.dayMomentArray = moment.twix(moment(), moment().add(7, 'days')).toArray('days');
         },
         changeDay(e) {
             this.selectedDay = e.target.value;
             this.manualUpdate();
         },
+        // APIが返してくるJSONを実際に使える形に整形する
+        manipulateScheduleData(scheduleArray) {
+            return scheduleArray.map((schedule) => {
+                let sales_textstatus = 'オンライン販売中';
+                if (schedule.onlineSalesStatus === 'Suspended') {
+                    sales_textstatus = (schedule.evServiceStatus === 'Slowdown') ? 'オンライン販売休止' : 'オンライン販売中止';
+                }
+                return {
+                    id: schedule.id,
+                    hour: moment(schedule.startDate).format('HH'),
+                    start_time: moment(schedule.startDate).format('HH:mm'),
+                    end_time: moment(schedule.endDate).format('HH:mm'),
+                    seat_status: schedule.remainingAttendeeCapacity,
+                    wheelchair_available: schedule.remainingAttendeeCapacityForWheelchair,
+                    tourNumber: schedule.tourNumber,
+                    online_sales_status: schedule.onlineSalesStatus,
+                    ev_status: schedule.evServiceStatus,
+                    tour_number: schedule.tourNumber,
+                    capacity: schedule.maximumAttendeeCapacity,
+                    sales_textstatus,
+                };
+            });
+        },
         async updateStatus() {
-            const performanceArray = await this.fetchScheduleStatus(this.selectedDay);
-            if (!Array.isArray(performanceArray)) { return false; }
-            // 1hごとにまとめる (start_timeの最初2文字を時間とする)
+            // 選択した日の全パフォーマンスを取得
+            const scheduleArray = await this.fetchScheduleStatus({
+                startFrom: moment(`${this.selectedDay} 000000`, 'YYYYMMDD HHmmss').toISOString(),
+                startThrough: moment(`${this.selectedDay} 235959`, 'YYYYMMDD HHmmss').toISOString(),
+            });
+            if (typeof scheduleArray[0] !== 'object') { return false; }
+
+            // hour ごとでまとめる
             const hourArray = [];
             const performancesByHour = {};
-            performanceArray.forEach((performance) => {
+            this.manipulateScheduleData(scheduleArray).forEach((performance) => {
                 try {
-                    const hour = performance.start_time.slice(0, 2);
+                    const hour = performance.hour;
                     if (!performancesByHour[hour]) {
                         hourArray.push(hour);
                         performancesByHour[hour] = [];
                     }
-                    performancesByHour[hour].push({
-                        id: performance.id,
-                        start_time: moment(performance.start_time, 'hmm').format('HH:mm'),
-                        end_time: moment(performance.end_time, 'hmm').format('HH:mm'),
-                        seat_status: performance.seat_status,
-                    });
+                    performancesByHour[hour].push(performance);
                 } catch (e) {
                     console.log(e);
                     return true;
@@ -135,7 +165,7 @@ export default {
                 this.updateStatus().then(() => {
                     this.setFetchDataInterval();
                 });
-            }, this.getNextTickUnixtime());
+            }, getNextTickUnixtime());
         },
         manualUpdate() {
             if (this.$store.state.loadingMsg) { return false; }
@@ -253,7 +283,27 @@ export default {
                 color: #5290cd;
             }
             .status {
+                display: block;
                 font-size: 36px;
+                &::before {
+                    content: '　';
+                    width: 28px;
+                    height: 28px;
+                    margin-right: 10px;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                    background-position: center;
+                }
+                &.status-normal {
+                    &::before {
+                        background-image: url('../assets/icon-standing.svg');
+                    }
+                }
+                &.status-wheelchair {
+                    &::before {
+                        background-image: url('../assets/icon-Wheelchair.svg');
+                    }
+                }
             }
         }
         .item-last {
@@ -269,8 +319,17 @@ export default {
                 background-color: #bcbcbc;
             }
             .wrapper-status {
+                background-color: #ddd;
+                color: #9a9a9b;
+            }
+        }
+        .item-supenpeded {
+            .time {
                 background-color: #bcbcbc;
-                color: #fff;
+            }
+            .wrapper-status {
+                background-color: #333;
+                color: #9a9a9b;
             }
         }
         .item-current {
