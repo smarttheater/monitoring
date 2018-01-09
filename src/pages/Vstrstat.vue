@@ -178,7 +178,7 @@ export default {
                             reservedNum: totalReservedNumByCategory[code],
                         };
                     }),
-                    checkpointStatusArray: schedule.checkinCountsByWhere.map((countData) => {
+                    checkpointStatusArray: schedule.checkinCountsByWhere.filter((c) => { return (APPCONFIG.CHECKPOINT_WHERE_ARRAY.indexOf(c.where) !== -1); }).map((countData) => {
                         // ticketCategory ごとのチェックイン済み数を求める。同時に平常(concerned)と要注意(notConcerned)の括りでも数える。
                         const totalCheckinNumByCategory = {
                             notConcerned: 0,

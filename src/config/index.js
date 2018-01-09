@@ -7,8 +7,12 @@ export default {
     },
     VSTRSTAT: {
         API_CHECKPOINTDIFINITION_ENDPOINT: 'https://ttts-api-development.azurewebsites.net/preview/places/checkinGate',
-        CONCERNED_CATEGORYCODE_ARRAY: [
+        CONCERNED_CATEGORYCODE_ARRAY: [ // 一般と分けて表示するカテゴリー
             'Wheelchair',
+        ],
+        CHECKPOINT_WHERE_ARRAY: [ // APIレスポンスの checkinCountsByWhere から拾う対象
+            'TOPDECK_AUTH',
+            'DAITEN_AUTH',
         ],
         UPDATEINTERVAL: 60000,
     },
