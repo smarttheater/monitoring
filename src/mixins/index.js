@@ -1,6 +1,9 @@
 import * as axios from 'axios';
 
-const APPCONFIG = require('../config').default;
+// PHPなどのsleepと同じ。UI表示調整用
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // 現在時刻から次の更新時刻までのsetTimeout用msを得る
 export function getNextTickUnixtime() {
@@ -38,11 +41,11 @@ export function getStatusClassNameByPerformance(momentObj, performance, STATUS_T
 }
 
 export function fetchScheduleStatus(params) {
+    const APPCONFIG = this.$store.state.APPCONFIG;
     return new Promise((resolve, reject) => {
         axios.get(APPCONFIG.API_STATUS_ENDPOINT, {
             params,
             timeout: APPCONFIG.API_TIMEOUT,
-            auth: APPCONFIG.API_BASICAUTH,
         }).then((res) => {
             this.$store.commit('UPDATE_MOMENTOBJ');
             let errorMsg = '';

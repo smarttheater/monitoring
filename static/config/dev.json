@@ -1,0 +1,7 @@
+{
+  "API_STATUS_ENDPOINT": "//ttts-api-test.azurewebsites.net/preview/performancesWithAggregation",
+  "API_CHECKPOINTDIFINITION_ENDPOINT": "//ttts-api-test.azurewebsites.net/preview/places/checkinGate",
+  "API_TIMEOUT": "30000",
+  "VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY": ["Wheelchair"],
+  "VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY": ["TOPDECK_AUTH", "DAITEN_AUTH"]
+}

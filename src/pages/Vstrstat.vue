@@ -63,7 +63,7 @@
   来塔状況確認用画面(通称:現場のおばちゃん画面)
   ・パフォーマンスごとの来塔予定者数とチェックポイントごとの未到着者数を表示する
   ・車椅子の相手は注意が必要なので表示とカウントの枠を分ける
-  →(現状は車椅子だけだが他に要注意カテゴリが発生する可能性はあるので APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY で注意対象の券種カテゴリを定義する)
+  →(現状は車椅子だけだが他に要注意カテゴリが発生する可能性はあるので APPCONFIG.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY で注意対象の券種カテゴリを定義する)
 */
 import { swiper, swiperSlide } from 'vue-awesome-swiper';
 import * as axios from 'axios';
@@ -73,7 +73,6 @@ import { fetchScheduleStatus, getNextTickUnixtime } from '../mixins/';
 require('moment/locale/ja'); // 軽量化のためja以外のlocaleはwebpackビルド時に消す
 
 moment.locale('ja');
-const APPCONFIG = require('../config').default.VSTRSTAT;
 
 export default {
     components: {
@@ -82,7 +81,7 @@ export default {
     },
     data() {
         return {
-            APPCONFIG,
+            APPCONFIG: this.$store.state.APPCONFIG,
             flg_loaded: false,
             lastupdateStr: '未取得',
             chekpointDefinition: {},
@@ -160,7 +159,7 @@ export default {
                     }
                     totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] += ticketType.count;
 
-                    if (APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketCategoryByCode[ticketType.ticketType]) === -1) {
+                    if (this.APPCONFIG.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketCategoryByCode[ticketType.ticketType]) === -1) {
                         totalReservedNumByCategory.notConcerned += ticketType.count;
                     } else {
                         totalReservedNumByCategory.concerned += ticketType.count;
@@ -172,13 +171,13 @@ export default {
                     start_time: moment(schedule.startDate).format('HH:mm'),
                     end_time: moment(schedule.endDate).format('HH:mm'),
                     normalReservedNum: totalReservedNumByCategory.notConcerned,
-                    concernedReservationArray: APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
+                    concernedReservationArray: this.APPCONFIG.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
                         return {
                             name: code,
                             reservedNum: totalReservedNumByCategory[code],
                         };
                     }),
-                    checkpointStatusArray: schedule.checkinCountsByWhere.filter((c) => { return (APPCONFIG.CHECKPOINT_WHERE_ARRAY.indexOf(c.where) !== -1); }).map((countData) => {
+                    checkpointStatusArray: schedule.checkinCountsByWhere.filter((c) => { return (this.APPCONFIG.VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY.indexOf(c.where) !== -1); }).map((countData) => {
                         // ticketCategory ごとのチェックイン済み数を求める。同時に平常(concerned)と要注意(notConcerned)の括りでも数える。
                         const totalCheckinNumByCategory = {
                             notConcerned: 0,
@@ -191,7 +190,7 @@ export default {
                             }
                             totalCheckinNumByCategory[ticketType.ticketCategory] += ticketType.count;
 
-                            if (APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketType.ticketCategory) === -1) {
+                            if (this.APPCONFIG.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY.indexOf(ticketType.ticketCategory) === -1) {
                                 totalCheckinNumByCategory.notConcerned += ticketType.count;
                             } else {
                                 totalCheckinNumByCategory.concerned += ticketType.count;
@@ -202,7 +201,7 @@ export default {
                             id: countData.where,
                             name: this.chekpointDefinition[countData.where],
                             normalUnarrivedNum: (totalReservedNumByCategory.notConcerned - totalCheckinNumByCategory.notConcerned),
-                            concernedUnarrivedArray: APPCONFIG.CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
+                            concernedUnarrivedArray: this.APPCONFIG.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY.filter((code) => { return (typeof totalReservedNumByCategory[code] === 'number'); }).map((code) => {
                                 return {
                                     name: code,
                                     unarrivedNum: (totalReservedNumByCategory[code] - totalCheckinNumByCategory[code]),
@@ -215,9 +214,8 @@ export default {
         },
         refreshCheckpointsData() {
             return new Promise((resolve) => {
-                axios.get(APPCONFIG.API_CHECKPOINTDIFINITION_ENDPOINT, {
-                    timeout: APPCONFIG.API_TIMEOUT,
-                    auth: APPCONFIG.API_BASICAUTH,
+                axios.get(this.APPCONFIG.API_CHECKPOINTDIFINITION_ENDPOINT, {
+                    timeout: this.APPCONFIG.API_TIMEOUT,
                 }).then((res) => {
                     if (!Array.isArray(res.data) || !res.data.length) {
                         return this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [チェックポイントの定義が読み込めませんでした][/places/checkinGate]`);

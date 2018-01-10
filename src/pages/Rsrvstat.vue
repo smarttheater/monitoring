@@ -2,7 +2,7 @@
 <div :class="['content', {'onerror': $store.state.errorMsgStr}]">
     <myHeader>
         <div slot="headerMenu" class="statheadermenu">
-            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(APPCONFIG.UPDATEINTERVAL / 1000)}}秒毎に自動更新)</div>
+            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(60000 / 1000)}}秒毎に自動更新)</div>
             <div class="btn-update" @click="manualUpdate">更新</div>
         </div>
     </myHeader>
@@ -60,15 +60,12 @@ import * as moment from 'moment';
 import 'twix';
 import { getNextTickUnixtime, getStatusClassNameByPerformance, fetchScheduleStatus } from '../mixins/';
 
-const APPCONFIG = require('../config').default.RSRVSTAT;
-
 export default {
     components: {
         Clock: require('../components/Clock.vue').default,
     },
     data() {
         return {
-            APPCONFIG,
             lastupdateStr: '未取得',
             moment,
             dayMomentArray: [],
