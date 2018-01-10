@@ -155,7 +155,7 @@ export default {
                     concerned: 0,
                 };
                 schedule.reservationCountsByTicketType.forEach((ticketType) => {
-                    if (typeof totalReservedNumByCategory[ticketCategoryByCode[ticketType]] !== 'number') {
+                    if (typeof totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] !== 'number') {
                         totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] = 0;
                     }
                     totalReservedNumByCategory[ticketCategoryByCode[ticketType.ticketType]] += ticketType.count;
