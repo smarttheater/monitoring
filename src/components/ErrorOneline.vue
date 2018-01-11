@@ -1,6 +1,6 @@
 <template>
     <div class="error-oneline">
-        <div><pre>{{ errorMsgStr }}</pre></div>
+        <div><p>{{ errorMsgStr }}</p></div>
     </div>
 </template>
 
@@ -21,12 +21,7 @@ export default {
         border:1px solid #ccc;
         padding: 0 1em;
         font-weight: bold;
-        >div {
-            overflow-x: scroll; 
-            &::-webkit-scrollbar {
-                display: none;
-            }
-        }
+        font-size: 0.9em;
     }
 </style>
 

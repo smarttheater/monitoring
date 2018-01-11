@@ -42,7 +42,7 @@ export function getStatusClassNameByPerformance(momentObj, performance, STATUS_T
 
 export function fetchScheduleStatus(params) {
     const APPCONFIG = this.$store.state.APPCONFIG;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         axios.get(APPCONFIG.API_STATUS_ENDPOINT, {
             params,
             timeout: APPCONFIG.API_TIMEOUT,
@@ -67,8 +67,8 @@ export function fetchScheduleStatus(params) {
         }).catch((err) => {
             console.log(err);
             this.$store.commit('UPDATE_MOMENTOBJ');
-            this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [通信エラー][ステータス取得][${err.message}]`);
-            return reject();
+            this.$store.commit('SET_ERRORMSG', `(${this.$store.state.moment.format('HH:mm:ss')}) [通信エラー][ステータス取得] ${err.message}`);
+            return resolve([]);
         });
     });
 }

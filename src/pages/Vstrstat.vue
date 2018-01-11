@@ -102,8 +102,9 @@ export default {
     },
     created() {
         // データ初期化後に自動取得開始
-        this.$store.commit('SET_LOADINGMSG', '画面初期化中...');
+        this.$store.commit('SET_LOADINGMSG', '認証場所の一覧を取得中...');
         this.refreshCheckpointsData().then(() => {
+            this.$store.commit('SET_LOADINGMSG', '来塔状況を取得中...');
             this.fetchData().then(() => {
                 this.flg_loaded = true;
                 this.setFetchDataInterval();

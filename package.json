@@ -13,6 +13,7 @@
   "dependencies": {
     "axios": "0.17.1",
     "es6-promise": "4.2.2",
+    "mdn-polyfills": "5.5.0",
     "moment": "2.20.1",
     "twix": "1.2.1",
     "vue": "2.5.13",
