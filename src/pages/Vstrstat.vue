@@ -309,6 +309,7 @@ export default {
     }
     .swiper-container {
         max-width: 960px;
+        padding-left: 1px; // slideのborder-leftが見切れないように
     }
     .swiper-button-disabled {
         display: none;

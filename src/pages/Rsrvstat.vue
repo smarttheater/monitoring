@@ -212,6 +212,7 @@ export default {
             vertical-align: middle;
             font-size: 32px;
             border-radius: 6px;
+            padding: 0 0.5em;
             cursor: pointer;
         }
         .time {
