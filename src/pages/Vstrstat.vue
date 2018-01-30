@@ -10,7 +10,7 @@
     <errorOneline v-if="$store.state.errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${$store.state.errorMsgStr}`"></errorOneline>
 
     <div class="clockwrapper" @click="focusCurrentSchedule">
-        <p><span class="iconBefore icon-clock">{{ $store.state.moment.format('YYYY/MM/DD (dd)') }}</span><span class="hhmm">{{ $store.state.moment.format('HH:mm') }}</span></p>
+        <p><span class="iconBefore icon-clock">{{ $store.state.moment.format('YYYY/MM/DD (dd)') }}</span><clock class="hhmm"></clock></p>
     </div>
 
     <main>
@@ -78,6 +78,7 @@ export default {
     components: {
         swiper,
         swiperSlide,
+        Clock: require('../components/Clock.vue').default,
     },
     data() {
         return {

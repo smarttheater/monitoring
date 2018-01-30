@@ -9,10 +9,6 @@
                     <li><router-link to="/vstrstat"><span>来塔状況確認画面</span></router-link></li>
                 </ul>
             </li>
-            <li>[サイネージ]<br>
-                <ul>
-                </ul>
-            </li>
         </ul>
     </div>
 </div>
