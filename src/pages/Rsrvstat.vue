@@ -36,7 +36,7 @@
                         <div class="wrapper-status">
                             <p class="status-inner">
                                 <span class="status status-normal">{{ performance.seat_status }}</span>
-                                <span class="status status-wheelchair">{{ performance.wheelchair_available }}</span>
+                                <span class="status status-wheelchair">0</span>
                             </p>
                             <p class="exstatus">
                                 <span class="exstatus-sales_textstatus">{{ performance.sales_textstatus }}</span>
