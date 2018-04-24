@@ -21,7 +21,7 @@
     <errorOneline v-if="$store.state.errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${$store.state.errorMsgStr}`"></errorOneline>
 
     <transition name="fadeup" appear>
-        <main v-if="hourArray[0]" :key="`${selectedDay}hours`">
+        <main v-if="hourArray[0] && !$store.state.loadingMsg" :key="`${selectedDay}hours`">
             <div v-for="hour in hourArray" :key="`${selectedDay}${hour}`"
                 :class="['hour',
                     {
