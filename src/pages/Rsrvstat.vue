@@ -2,7 +2,7 @@
 <div :class="['content', {'onerror': $store.state.errorMsgStr}]">
     <myHeader>
         <div slot="headerMenu" class="statheadermenu">
-            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(60000 / 1000)}}秒毎に自動更新)</div>
+            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>60秒毎に自動更新)</div>
             <div class="btn-update" @click="manualUpdate">更新</div>
         </div>
     </myHeader>
@@ -83,13 +83,6 @@ export default {
         isToday() {
             return (this.selectedDay === this.$store.state.moment.format('YYYYMMDD'));
         },
-    },
-    created() {
-        this.createDaySelect();
-        this.manualUpdate();
-    },
-    beforeDestroy() {
-        clearTimeout(this.timeoutInstance_IntervalFetch);
     },
     methods: {
         fetchScheduleStatus,
@@ -175,11 +168,18 @@ export default {
                 this.setFetchDataInterval();
             });
         },
-        watch: {
-            dayparam() {
-                this.manualUpdate();
-            },
+    },
+    watch: {
+        dayparam() {
+            this.manualUpdate();
         },
+    },
+    created() {
+        this.createDaySelect();
+        this.manualUpdate();
+    },
+    beforeDestroy() {
+        clearTimeout(this.timeoutInstance_IntervalFetch);
     },
 };
 /* eslint-disable no-irregular-whitespace */
