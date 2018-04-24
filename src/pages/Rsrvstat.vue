@@ -2,7 +2,7 @@
 <div :class="['content', {'onerror': $store.state.errorMsgStr}]">
     <myHeader>
         <div slot="headerMenu" class="statheadermenu">
-            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>60秒毎に自動更新)</div>
+            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>(60秒毎に自動更新)</div>
             <div class="btn-update" @click="manualUpdate">更新</div>
         </div>
     </myHeader>
