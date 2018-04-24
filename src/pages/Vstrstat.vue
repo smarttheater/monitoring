@@ -273,6 +273,7 @@ export default {
         },
     },
 };
+/* eslint-disable no-irregular-whitespace */
 </script>
 
 <style lang="scss" scoped>

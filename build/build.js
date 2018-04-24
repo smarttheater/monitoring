@@ -23,7 +23,7 @@ rm(config.build.assetsRoot, err => {
     process.stdout.write(stats.toString({
       colors: true,
       modules: false,
-      children: false, // if you are using ts-loader, setting this to true will make tyescript errors show up during build
+      children: false, // If you are using ts-loader, setting this to true will make TypeScript errors show up during build.
       chunks: false,
       chunkModules: false
     }) + '\n\n')

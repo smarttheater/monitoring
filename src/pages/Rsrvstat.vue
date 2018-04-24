@@ -182,6 +182,7 @@ export default {
         },
     },
 };
+/* eslint-disable no-irregular-whitespace */
 </script>
 
 <style lang="scss" scoped>
@@ -254,7 +255,7 @@ export default {
         &.hour-hidden {
             display: none;
         }
-    }   
+    }
     .items {
         display: table;
         width: 100%;

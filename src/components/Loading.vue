@@ -75,7 +75,7 @@ export default {
     transform: scale(1.1);
 }
 
-.v-spinner {         
+.v-spinner {
     width: 128px;
     height: 128px;
     margin: auto;
@@ -91,8 +91,8 @@ export default {
         border: 12px solid #fff;
         border-radius: 100%;
         animation-fill-mode: forwards;
-        perspective: 800px;  
-        position: absolute;          
+        perspective: 800px;
+        position: absolute;
         top: 0;
         left: 0;
     }
@@ -118,7 +118,7 @@ export default {
         opacity: 0.8;
         transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
     }
-    100% { 
+    100% {
         opacity: 0.2;
         transform: rotateX(360deg) rotateY(180deg) rotateZ(360deg);
     }
