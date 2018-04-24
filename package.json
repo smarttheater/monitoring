@@ -1,6 +1,6 @@
 {
   "name": "frontend_tttsutil",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "operation utils frontend for TTTS",
   "author": "Shun <shun@motionpicture.jp>",
   "private": true,
