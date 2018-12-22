@@ -4,7 +4,6 @@
 - 使用領域 = 
 -- POS横設置端末での予約状況照会
 -- 案内スタッフ支給iPadでの来塔客通過状況確認
--- サイネージその他汎用？
 
 ### アプリ設定
 configを設置先の環境変数から変えられた方がよいということで
@@ -23,7 +22,7 @@ buildされたアプリはPHPファイル (`/static/config/prd.php`) 経由で�
 `/toRootDir`に入れたファイルはドキュメントルートになる`dist`にそのままコピーされる (Web.configなどはここに入れる)
 
 ## Build Setup
-※デプロイは /dist/ をドキュメントルートとして参照すればよいので開発しないなら不要
+precommitで`npm run build && git add --all`させることで`dist`は常に最新の状態にする
 
 ``` bash
 # install dependencies

@@ -2,7 +2,7 @@
 <div :class="['content', {'onerror': $store.state.errorMsgStr}]">
     <myHeader>
         <div slot="headerMenu" class="statheadermenu">
-            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>({{(60000 / 1000)}}秒毎に自動更新)</div>
+            <div class="lastupdate"><span>{{ lastupdateStr }}</span><br>(60秒毎に自動更新)</div>
             <div class="btn-update" @click="manualUpdate">更新</div>
         </div>
     </myHeader>
@@ -21,7 +21,7 @@
     <errorOneline v-if="$store.state.errorMsgStr" :errorMsgStr="`データ取得エラーが発生しています ${$store.state.errorMsgStr}`"></errorOneline>
 
     <transition name="fadeup" appear>
-        <main v-if="hourArray[0]" :key="`${selectedDay}hours`">
+        <main v-if="hourArray[0] && !$store.state.loadingMsg" :key="`${selectedDay}hours`">
             <div v-for="hour in hourArray" :key="`${selectedDay}${hour}`"
                 :class="['hour',
                     {
@@ -83,13 +83,6 @@ export default {
         isToday() {
             return (this.selectedDay === this.$store.state.moment.format('YYYYMMDD'));
         },
-    },
-    created() {
-        this.createDaySelect();
-        this.manualUpdate();
-    },
-    beforeDestroy() {
-        clearTimeout(this.timeoutInstance_IntervalFetch);
     },
     methods: {
         fetchScheduleStatus,
@@ -175,13 +168,21 @@ export default {
                 this.setFetchDataInterval();
             });
         },
-        watch: {
-            dayparam() {
-                this.manualUpdate();
-            },
+    },
+    watch: {
+        dayparam() {
+            this.manualUpdate();
         },
     },
+    created() {
+        this.createDaySelect();
+        this.manualUpdate();
+    },
+    beforeDestroy() {
+        clearTimeout(this.timeoutInstance_IntervalFetch);
+    },
 };
+/* eslint-disable no-irregular-whitespace */
 </script>
 
 <style lang="scss" scoped>
@@ -254,7 +255,7 @@ export default {
         &.hour-hidden {
             display: none;
         }
-    }   
+    }
     .items {
         display: table;
         width: 100%;

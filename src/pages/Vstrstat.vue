@@ -129,13 +129,13 @@ export default {
                 return (this.$store.state.moment.isBetween(`${ymd} ${schedule.start_time}:00`, `${ymd} ${schedule.end_time}:59`));
             });
             // 受付中のscheduleが無かった場合全て終了済みなのかチェック
-            if (!currentIndex && this.$store.state.moment.isAfter(`${ymd} ${this.scheduleArray[this.scheduleArray.length - 1].end_time}:59`)) {
+            if (currentIndex < 0 && this.$store.state.moment.isAfter(`${ymd} ${this.scheduleArray[this.scheduleArray.length - 1].end_time}:59`)) {
                 // 全て終了済みの表示にするためカンスト
                 currentIndex = Number.MAX_VALUE;
             }
 
             // アクティブなパフォーマンスへswiperのフォーカスを移動する
-            if (currentIndex <= this.scheduleArray.length) {
+            if (currentIndex >= 0 && currentIndex <= this.scheduleArray.length) {
                 this.$refs.scheduleSwiper.swiper.slideTo(currentIndex);
             }
             this.currentScheduleIndex = currentIndex;
@@ -273,6 +273,7 @@ export default {
         },
     },
 };
+/* eslint-disable no-irregular-whitespace */
 </script>
 
 <style lang="scss" scoped>
