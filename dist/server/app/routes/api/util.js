@@ -68,7 +68,7 @@ router.get('/config', (_req, res) => {
     res.json({
         ENV: process.env.APP_ENV,
         API_STATUS_ENDPOINT: process.env.API_STATUS_ENDPOINT,
-        API_CHECKPOINTDIFINITION_ENDPOINT: process.env.API_STATUS_ENDPOINT,
+        API_CHECKPOINTDIFINITION_ENDPOINT: process.env.API_CHECKPOINTDIFINITION_ENDPOINT,
         API_TIMEOUT: process.env.API_TIMEOUT,
         VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY: (process.env.VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY === undefined)
             ? []
