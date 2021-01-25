@@ -6,9 +6,6 @@
 -- 案内スタッフ支給iPadでの来塔客通過状況確認
 
 ### アプリ設定
-configを設置先の環境変数から変えられた方がよいということで
-buildされたアプリはPHPファイル (`/static/config/prd.php`) 経由で必要な環境変数を読み込む
-(開発時はローカルのjson (`/static/config/dev.json`) が読まれる。(この処理は `/src/store` 内で分岐している)
 ※値は全て必須で空のものがあるとエラー終了
 | Name                                   | Required | Purpose                               |
 | -------------------------------------  | -------- | ------------------------------------- |
@@ -27,9 +24,6 @@ precommitで`npm run build && git add --all`させることで`dist`は常に最
 ``` bash
 # install dependencies
 npm install
-
-# serve with hot reload at localhost:8080
-npm run dev
 
 # build for production with minification
 npm run build

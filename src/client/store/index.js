@@ -59,7 +59,8 @@ export default new Vuex.Store({
     actions: {
         FETCH_APPCONFIG({ commit }) {
             return new Promise(async (resolve, reject) => {
-                axios.get((isProduction) ? '/static/config/prd.php' : '/static/config/dev.json').then((res) => {
+                const url = '/api/config';
+                axios.get(url).then((res) => {
                     if (typeof res.data !== 'object' || Object.keys(res.data).some((key) => { return (!res.data[key] || !res.data[key][0]); })) {
                         return reject();
                     }
