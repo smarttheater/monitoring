@@ -68,7 +68,7 @@
 import { swiper, swiperSlide } from 'vue-awesome-swiper';
 import * as axios from 'axios';
 import * as moment from 'moment';
-import { fetchScheduleStatus, getNextTickUnixtime } from '../mixins/';
+import { fetchScheduleStatus, getNextTickUnixtime } from '../mixins/index.ts';
 
 require('moment/locale/ja'); // 軽量化のためja以外のlocaleはwebpackビルド時に消す
 
@@ -244,7 +244,7 @@ export default {
                 params.startFrom.setHours(0, 0, 0, 0);
                 params.startThrough.setHours(23, 59, 59, 999);
 
-                const scheduleArray = await this.fetchScheduleStatus(params);
+                const scheduleArray = await this.fetchScheduleStatus(this.$store, params);
                 if (typeof scheduleArray[0] === 'object') {
                     this.scheduleArray = this.manipulateScheduleData(scheduleArray);
                     this.lastupdateStr = `${this.$store.state.moment.format('HH:mm:ss')}時点データ表示中`;

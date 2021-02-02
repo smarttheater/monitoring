@@ -58,7 +58,7 @@
 */
 import * as moment from 'moment';
 import 'twix';
-import { getNextTickUnixtime, getStatusClassNameByPerformance, fetchScheduleStatus } from '../mixins/';
+import { getNextTickUnixtime, getStatusClassNameByPerformance, fetchScheduleStatus } from '../mixins/index.ts';
 
 export default {
     components: {
@@ -120,7 +120,7 @@ export default {
         },
         async updateStatus() {
             // 選択した日の全パフォーマンスを取得
-            const scheduleArray = await this.fetchScheduleStatus({
+            const scheduleArray = await this.fetchScheduleStatus(this.$store, {
                 startFrom: moment(`${this.selectedDay} 000000`, 'YYYYMMDD HHmmss').toISOString(),
                 startThrough: moment(`${this.selectedDay} 235959`, 'YYYYMMDD HHmmss').toISOString(),
             });
