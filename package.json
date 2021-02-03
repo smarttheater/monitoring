@@ -1,20 +1,21 @@
 {
   "name": "frontend_tttsutil",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "operation utils frontend for TTTS",
   "author": "Shun <shun@motionpicture.jp>",
   "private": true,
   "scripts": {
     "start": "node dist/server/index",
     "ssl": "node dist/server/ssl",
+    "test": "npm run lint",
     "lint": "eslint --ext .js,.vue src",
-    "build": "npm run lint && npm run build-server && npm run build-client",
+    "build": "npm run build-server && npm run build-client",
     "build-client-local": "npm run clean && node build/development.js",
     "build-client": "npm run clean && node build/build.js",
     "build-server": "tsc --project src/server --outDir dist/server --locale ja-jp",
     "precommit": "npm run build && git add --all",
     "clean": "rimraf dist/client",
-    "preversion": "npm run build",
+    "preversion": "npm run test && npm run build",
     "version": "git add -A"
   },
   "dependencies": {
