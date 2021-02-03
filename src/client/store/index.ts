@@ -60,7 +60,7 @@ export default new Vuex.Store({
         FETCH_APPCONFIG({ commit }) {
             return new Promise(async (resolve, reject) => {
                 const url = '/api/config';
-                axios.get(url).then((res) => {
+                axios.default.get(url).then((res) => {
                     if (typeof res.data !== 'object' || Object.keys(res.data).some((key) => { return (!res.data[key] || !res.data[key][0]); })) {
                         return reject();
                     }
@@ -74,7 +74,7 @@ export default new Vuex.Store({
         },
 
         QUIT() {
-            return new Promise(async (resolve) => {
+            return new Promise<void>(async (resolve) => {
                 // ページごと初期化する
                 // window.sessionStorage.removeItem('vuex');
                 window.location.href = window.location.href.split('#')[0];

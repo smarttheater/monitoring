@@ -1,20 +1,21 @@
 {
   "name": "frontend_tttsutil",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "operation utils frontend for TTTS",
   "author": "Shun <shun@motionpicture.jp>",
   "private": true,
   "scripts": {
     "start": "node dist/server/index",
     "ssl": "node dist/server/ssl",
+    "test": "npm run lint",
     "lint": "eslint --ext .js,.vue src",
-    "build": "npm run lint && npm run build-server && npm run build-client",
+    "build": "npm run build-server && npm run build-client",
     "build-client-local": "npm run clean && node build/development.js",
     "build-client": "npm run clean && node build/build.js",
     "build-server": "tsc --project src/server --outDir dist/server --locale ja-jp",
     "precommit": "npm run build && git add --all",
     "clean": "rimraf dist/client",
-    "preversion": "npm run build",
+    "preversion": "npm run test && npm run build",
     "version": "git add -A"
   },
   "dependencies": {
@@ -83,6 +84,8 @@
     "sass-loader": "^7.0.1",
     "semver": "^5.3.0",
     "shelljs": "^0.7.6",
+    "ts-loader": "^3.5.0",
+    "tsconfig-paths-webpack-plugin": "^3.3.0",
     "typescript": "^4.1.3",
     "uglifyjs-webpack-plugin": "^1.1.1",
     "url-loader": "^0.5.8",
