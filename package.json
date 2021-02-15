@@ -13,7 +13,6 @@
     "build-client-local": "npm run clean && node build/development.js",
     "build-client": "npm run clean && node build/build.js",
     "build-server": "tsc --project src/server --outDir dist/server --locale ja-jp",
-    "precommit": "npm run build && git add --all",
     "clean": "rimraf dist/client",
     "preversion": "npm run test && npm run build",
     "version": "git add -A"

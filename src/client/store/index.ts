@@ -4,6 +4,18 @@ import Vuex from 'vuex';
 import * as axios from 'axios';
 import * as moment from 'moment';
 
+
+export interface IAppConfig {
+    API_ENDPOINT?: string;
+    API_STATUS_ENDPOINT?: string;
+    API_CHECKPOINTDIFINITION_ENDPOINT?: string;
+    API_TIMEOUT: string;
+    ENV?: 'development' | 'test' | 'production';
+    PROJECT_ID?: string;
+    VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY?: string[];
+    VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY?: string[];
+}
+
 Vue.use(Vuex);
 
 const isProduction = (process.env.NODE_ENV === 'production');

@@ -14,6 +14,7 @@
 | `API_TIMEOUT`                          | true     | APIタイムアウト時間(ms)                   |
 | `VSTRSTAT_CONCERNED_CATEGORYCODE_ARRAY`| true     | 来塔状況画面で一般と分けて表示する`ticketType`を記述 (カンマ区切り、クォーテーション無し)  |
 | `VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY`| true     | 来塔状況画面で表示するチェックイン場所の`where`を記述 (カンマ区切り、クォーテーション無し)  |
+| `PROJECT_ID`                           | true     | プロジェクトID                         |
 
 ### その他
 `/toRootDir`に入れたファイルはドキュメントルートになる`dist`にそのままコピーされる (Web.configなどはここに入れる)
