@@ -1,10 +1,3 @@
-<script lang="ts">
-import Vue from 'vue';
-
-export default Vue.extend({
-});
-</script>
-
 <template>
 
 <div id="app" :class="{ noscroll: ($route.meta.noscroll) }">
@@ -17,12 +10,14 @@ export default Vue.extend({
 
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import Vue from 'vue';
+
+export default Vue.extend({
     components: {
         Loading: require('./components/Loading.vue').default,
     },
-};
+});
 
 </script>
 

@@ -69,6 +69,7 @@ router.get('/config', (_req, res) => {
         VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY: (process.env.VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY === undefined)
             ? []
             : process.env.VSTRSTAT_CHECKPOINT_TARGETWHERE_ARRAY.split(',').map(value => value.trim()),
+        PROJECT_ID: process.env.PROJECT_ID,
     })
 });
 

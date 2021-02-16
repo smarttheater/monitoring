@@ -58,5 +58,6 @@ module.exports = {
     'arrow-body-style': 0,
     'global-require': 0,
     'import/no-dynamic-require': 0,
+    'import/extensions': 'off'
   }
 }
