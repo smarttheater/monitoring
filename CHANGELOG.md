@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Security
 
+## 1.3.0 - 2020-02-16
+### Changed
+ - CinerinoSDKへ変更
+
 ## 1.2.0 - 2020-02-03
 ### Added
  - typescript導入
